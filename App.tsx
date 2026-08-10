@@ -7,6 +7,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from './src/session';
 import LoginScreen from './src/screens/LoginScreen';
 import RotaScreen from './src/screens/RotaScreen';
+import RastreioScreen from './src/screens/RastreioScreen';
+// Import de EFEITO COLATERAL, e no topo: registra a task de rastreio no escopo
+// global do bundle. Sem isto, o app acordado em background pelo Android não sabe
+// qual código rodar e o serviço morre. Não mover para dentro de componente.
+import './src/rastreio/task';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,7 +29,10 @@ function Navegacao() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {token ? (
-        <Stack.Screen name="Rota" component={RotaScreen} />
+        <>
+          <Stack.Screen name="Rota" component={RotaScreen} />
+          <Stack.Screen name="Rastreio" component={RastreioScreen} />
+        </>
       ) : (
         <Stack.Screen name="Login" component={LoginScreen} />
       )}

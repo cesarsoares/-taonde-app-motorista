@@ -3,13 +3,19 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useSession } from '../session';
 import { getRotaDoDia } from '../api/auth';
 import { ApiError } from '../api/client';
 import { RotaDoDia, Parada } from '../api/types';
+import * as filaRastreio from '../rastreio/fila';
+import { rastreando } from '../rastreio/task';
+
+type Rotas = { Rota: undefined; Rastreio: undefined };
 
 export default function RotaScreen() {
   const { token, sair } = useSession();
+  const nav = useNavigation<NavigationProp<Rotas>>();
   const [dados, setDados] = useState<RotaDoDia | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -32,6 +38,22 @@ export default function RotaScreen() {
     carregar();
   }, [carregar]);
 
+  // Estado do rastreio sempre à vista (régua de UX do motorista: sinal/sync
+  // visíveis). Em Expo Go o serviço não existe — degrada para desligado.
+  const [gps, setGps] = useState({ ligado: false, pendentes: 0 });
+  useEffect(() => {
+    const ler = async () => {
+      try {
+        setGps({ ligado: await rastreando(), pendentes: filaRastreio.tamanho() });
+      } catch {
+        setGps({ ligado: false, pendentes: 0 });
+      }
+    };
+    ler();
+    const t = setInterval(ler, 5000);
+    return () => clearInterval(t);
+  }, []);
+
   if (carregando) {
     return (
       <SafeAreaView style={s.safe}>
@@ -50,7 +72,18 @@ export default function RotaScreen() {
             {dados?.motorista_nome} · {paradas.length} parada{paradas.length === 1 ? '' : 's'}
           </Text>
         </View>
-        <TouchableOpacity onPress={sair} hitSlop={10}>
+        <TouchableOpacity
+          onPress={() => nav.navigate('Rastreio')}
+          hitSlop={10}
+          style={s.chip}
+          activeOpacity={0.7}
+        >
+          <View style={[s.ponto, gps.ligado ? s.pontoOn : s.pontoOff]} />
+          <Text style={s.chipTxt}>
+            {gps.pendentes > 0 ? `${gps.pendentes} a enviar` : gps.ligado ? 'Em jornada' : 'GPS'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={sair} hitSlop={10} style={{ marginLeft: 14 }}>
           <Text style={s.sair}>Sair</Text>
         </TouchableOpacity>
       </View>
@@ -101,6 +134,15 @@ const s = StyleSheet.create({
   titulo: { fontSize: 22, fontWeight: '800', color: '#e8f2ec', letterSpacing: -0.5 },
   sub: { fontSize: 14, color: '#93a8a0', marginTop: 2 },
   sair: { fontSize: 15, color: '#93a8a0', fontWeight: '600' },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,.13)',
+  },
+  chipTxt: { fontSize: 12, color: '#93a8a0', fontWeight: '700' },
+  ponto: { width: 8, height: 8, borderRadius: 4 },
+  pontoOn: { backgroundColor: '#34d399' },
+  pontoOff: { backgroundColor: '#6f827b' },
   erro: { color: '#f87171', fontSize: 14, paddingHorizontal: 18, paddingTop: 12 },
   vazio: { color: '#93a8a0', textAlign: 'center', marginTop: 40, fontSize: 15 },
   card: {
