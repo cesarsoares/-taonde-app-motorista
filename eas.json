@@ -7,12 +7,14 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "autoIncrement": "versionCode",
       "android": {
         "buildType": "apk"
       }
     },
     "preview": {
       "distribution": "internal",
+      "autoIncrement": "versionCode",
       "android": {
         "buildType": "apk"
       }
