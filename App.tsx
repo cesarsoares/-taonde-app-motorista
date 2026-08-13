@@ -8,12 +8,14 @@ import { SessionProvider, useSession } from './src/session';
 import LoginScreen from './src/screens/LoginScreen';
 import RotaScreen from './src/screens/RotaScreen';
 import RastreioScreen from './src/screens/RastreioScreen';
+import ParadaScreen from './src/screens/ParadaScreen';
+import type { RootStackParamList } from './src/navigation/types';
 // Import de EFEITO COLATERAL, e no topo: registra a task de rastreio no escopo
 // global do bundle. Sem isto, o app acordado em background pelo Android não sabe
 // qual código rodar e o serviço morre. Não mover para dentro de componente.
 import './src/rastreio/task';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Gate de auth: sem token → Login; com token → Rota. (Mais telas entram no stack
 // da rota conforme a fatia cresce: Parada, POD…)
@@ -32,6 +34,7 @@ function Navegacao() {
         <>
           <Stack.Screen name="Rota" component={RotaScreen} />
           <Stack.Screen name="Rastreio" component={RastreioScreen} />
+          <Stack.Screen name="Parada" component={ParadaScreen} />
         </>
       ) : (
         <Stack.Screen name="Login" component={LoginScreen} />

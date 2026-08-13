@@ -3,19 +3,18 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, NavigationProp } from '@react-navigation/native';
 import { useSession } from '../session';
 import { getRotaDoDia } from '../api/auth';
 import { ApiError } from '../api/client';
 import { RotaDoDia, Parada } from '../api/types';
+import type { RootStackParamList } from '../navigation/types';
 import * as filaRastreio from '../rastreio/fila';
 import { rastreando } from '../rastreio/task';
 
-type Rotas = { Rota: undefined; Rastreio: undefined };
-
 export default function RotaScreen() {
   const { token, sair } = useSession();
-  const nav = useNavigation<NavigationProp<Rotas>>();
+  const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const [dados, setDados] = useState<RotaDoDia | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -34,9 +33,9 @@ export default function RotaScreen() {
     }
   }, [token]);
 
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
+  // useFocusEffect (não useEffect de mount): cobre o carregamento inicial e o
+  // retorno da tela de Parada com o status já atualizado pelo motorista.
+  useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
   // Estado do rastreio sempre à vista (régua de UX do motorista: sinal/sync
   // visíveis). Em Expo Go o serviço não existe — degrada para desligado.
@@ -111,10 +110,11 @@ export default function RotaScreen() {
 }
 
 function ParadaCard({ p }: { p: Parada }) {
+  const nav = useNavigation<NavigationProp<RootStackParamList>>();
   const e = p.entrega;
   const coleta = e.tipo_operacao === 'coleta';
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.8}>
+    <TouchableOpacity style={s.card} activeOpacity={0.8} onPress={() => nav.navigate('Parada', { parada: p })}>
       <Text style={s.ordem}>{p.ordem}</Text>
       <View style={{ flex: 1 }}>
         <Text style={s.dest}>{e.destinatario || e.nota_fiscal}</Text>
